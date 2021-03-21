@@ -12,7 +12,8 @@ class MediaSocialShare {
     return Platform.isIOS ? appleStoreLink : googlePlayLink;
   }
 
-  static const MethodChannel _channel = const MethodChannel('media_share');
+  static const MethodChannel _channel =
+      const MethodChannel('media_social_share');
 
   static Future<String> get platformVersion async {
     final String version = await _channel.invokeMethod('getPlatformVersion');
