@@ -78,10 +78,10 @@ class MediaSocialSharePlugin : ActivityAware, FlutterPlugin, MethodCallHandler {
                 val url: String? = args["url"] as? String?
                 shareStoryOnInstagram(url, result)
             }
-            "shareStoryOnFaceebok" -> {
+            "shareStoryOnFacebook" -> {
                 val args = call.arguments as Map<*, *>
                 val url: String? = args["url"] as? String?
-                shareStoryOnFaceebok(url, result)
+                shareStoryOnFacebook(url, result)
             }
             "sharePostOnInstagram" -> {
                 val args = call.arguments as Map<*, *>
@@ -271,7 +271,7 @@ class MediaSocialSharePlugin : ActivityAware, FlutterPlugin, MethodCallHandler {
         }
     }
 
-    private fun shareStoryOnFaceebok(url: String?, result: Result){
+    private fun shareStoryOnFacebook(url: String?, result: Result){
         try {
             if (isInstalled("com.facebook.android")) {
                 val imgFile = File(url)
