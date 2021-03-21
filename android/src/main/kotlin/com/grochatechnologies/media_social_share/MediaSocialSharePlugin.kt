@@ -1,19 +1,13 @@
 package com.grochatechnologies.media_social_share
 
-import androidx.annotation.NonNull
-
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import androidx.annotation.NonNull
 import androidx.core.content.FileProvider
-import io.flutter.embedding.engine.plugins.FlutterPlugin
-import io.flutter.plugin.common.MethodCall
-import io.flutter.plugin.common.MethodChannel
-import io.flutter.plugin.common.MethodChannel.MethodCallHandler
-import io.flutter.plugin.common.MethodChannel.Result
 import com.facebook.AccessToken
 import com.facebook.GraphRequest
 import com.facebook.HttpMethod
@@ -22,11 +16,16 @@ import com.facebook.share.model.ShareLinkContent
 import com.facebook.share.model.SharePhoto
 import com.facebook.share.model.SharePhotoContent
 import com.facebook.share.widget.ShareDialog
+import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.embedding.engine.plugins.activity.ActivityAware
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
+import io.flutter.plugin.common.MethodCall
+import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugin.common.MethodChannel.MethodCallHandler
+import io.flutter.plugin.common.MethodChannel.Result
 import org.json.JSONArray
 import java.io.File
 import java.lang.ref.WeakReference
-import io.flutter.embedding.engine.plugins.activity.ActivityAware
-import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 
 /** MediaSocialSharePlugin */
 class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
@@ -73,7 +72,8 @@ class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
       "shareStoryOnFacebook" -> {
         val args = call.arguments as Map<*, *>
         val url: String? = args["url"] as? String?
-        shareStoryOnFacebook(url, result)
+        val facebookId = args["facebookId"] as String
+        shareStoryOnFacebook(url, facebookId, result)
       }
       "sharePostOnInstagram" -> {
         val args = call.arguments as Map<*, *>
@@ -263,29 +263,20 @@ class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
     }
   }
 
-  private fun shareStoryOnFacebook(url: String?, result: Result){
-    try {
-      if (isInstalled("com.facebook.android")) {
-        val imgFile = File(url)
-        if (imgFile.exists()) {
-          val activity = activity.get()!!
-          val bitmapUri =
-                  FileProvider.getUriForFile(activity,
-                          "com.example.postouapp.com.postouapp.provider", imgFile)
-          val storiesIntent = Intent("com.facebook.stories.ADD_TO_STORY")
-          storiesIntent.setDataAndType(bitmapUri,
-                  activity.contentResolver.getType(bitmapUri))
-          storiesIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-          activity.startActivity(storiesIntent)
-          result.success("POST_SENT")
-        } else {
-          result.error("FAIL_TO_POST", "$url not found", "FACEBOOK_STORY_APP")
-        }
-      } else {
-        result.error("APP_NOT_FOUND", "O app do Facebook não foi encontrado", "FACEBOOK_STORY_APP")
-      }
-    } catch (e: Exception) {
-      result.error("FAIL_TO_POST", e.toString(), "FACEBOOK_STORY_APP")
+  private fun shareStoryOnFacebook(url: String?, facebookId: String, result: Result){
+    val stickerAssetUri = Uri.parse(url) // This is your application's FB ID
+    val intent = Intent("com.facebook.stories.ADD_TO_STORY")
+    intent.type = "MEDIA_TYPE_JPEG"
+    intent.putExtra("com.facebook.platform.extra.APPLICATION_ID", facebookId)
+    intent.putExtra("interactive_asset_uri", stickerAssetUri)
+    intent.putExtra("top_background_color", "#33FF33")
+    intent.putExtra("bottom_background_color", "#FF00FF")
+
+    val activity = activity.get()!!
+    activity.grantUriPermission(
+            "com.facebook.katana", stickerAssetUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    if (activity.packageManager.resolveActivity(intent, 0) != null) {
+      activity.startActivityForResult(intent, 0)
     }
   }
 
