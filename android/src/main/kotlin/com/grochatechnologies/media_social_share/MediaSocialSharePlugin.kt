@@ -4,6 +4,9 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Bundle
 import androidx.annotation.NonNull
@@ -26,6 +29,9 @@ import io.flutter.plugin.common.MethodChannel.Result
 import org.json.JSONArray
 import java.io.File
 import java.lang.ref.WeakReference
+import java.io.FileOutputStream
+import java.io.IOException
+import android.os.Environment
 
 /** MediaSocialSharePlugin */
 class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
@@ -49,20 +55,11 @@ class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
       "getPlatformVersion" -> result.success("Android ${android.os.Build.VERSION.RELEASE}")
       "getFacebookUser" -> getFacebookUser(result)
       "getFacebookUserPages" -> getFacebookUserPages(result)
-      "shareOnFacebook" -> {
+      "shareOnFeedFacebook" -> {
         val args = call.arguments as Map<*, *>
         val url: String? = args["url"] as? String?
         val message: String? = args["message"] as? String?
-        val accessToken = args["accessToken"]
-        val time: Long? = if (args["time"] == null) null else (args["time"] as? Int)!!.toLong()
-        val facebookId = args["facebookId"] as String
-
-        if (accessToken == null) {
-          shareOnFacebookProfile(url, message, result)
-        } else {
-          accessToken as String
-          shareOnFacebookPage(url, message, accessToken, time, facebookId, result)
-        }
+        shareOnFeedFacebook(url, message, result)
       }
       "shareStoryOnInstagram" -> {
         val args = call.arguments as Map<*, *>
@@ -75,11 +72,11 @@ class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
         val facebookId = args["facebookId"] as String
         shareStoryOnFacebook(url, facebookId, result)
       }
-      "sharePostOnInstagram" -> {
+      "shareOnFeedInstagram" -> {
         val args = call.arguments as Map<*, *>
         val url: String? = args["url"] as? String?
         val message: String? = args["message"] as? String?
-        sharePostOnInstagram(url, message, result)
+        shareOnFeedInstagram(url, message, result)
       }
       "shareOnWhatsApp" -> {
         val args = call.arguments as Map<*, *>
@@ -114,12 +111,12 @@ class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
         val link: String? = args["link"] as? String?
         shareLinkOnWhatsApp(link, result, true)
       }
-      "checkPermissionToPublish" -> checkPermissionToPublish(result)
-      "shareLinkOnFacebook" -> {
-        val args = call.arguments as Map<*, *>
-        val link: String? = args["link"] as? String?
-        shareLinkOnFacebook(link, result)
+      "shareOnGallery" -> {
+        val image = call.argument<ByteArray>("imageBytes") ?: return
+        val name = call.argument<String>("name")
+        shareOnGallery(BitmapFactory.decodeByteArray(image,0,image.size), name)
       }
+      "checkPermissionToPublish" -> checkPermissionToPublish(result)
       else -> result.notImplemented()
     }
   }
@@ -174,43 +171,7 @@ class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
     }
   }
 
-  private fun shareOnFacebookPage(url: String?, message: String?, accessToken: String, time: Long?,
-                                  facebookId: String, result: Result) {
-    try {
-      val parameters = Bundle()
-      if (url != null) {
-        parameters.putString("url", url)
-      }
-      parameters.putString("message", message)
-      parameters.putString("access_token", accessToken)
-      if (time != null) {
-        parameters.putLong("scheduled_publish_time", time)
-        parameters.putBoolean("published", false)
-      }
-
-      val partPath = if (url != null) "photos" else "feed"
-      val graphPath = "$facebookId/$partPath"
-
-      val localAccessToken = AccessToken.getCurrentAccessToken()
-      val gr = GraphRequest(
-              AccessToken(accessToken, localAccessToken.applicationId, localAccessToken.userId,
-                      null, null, null, null, null, null, null),
-              graphPath,
-              parameters,
-              HttpMethod.POST
-      ) { response ->
-        if (response.error == null) {
-          result.success("POST_SENT")
-        } else result.error("FAIL_TO_POST", "Error to posting", "FACEBOOK_APP")
-      }
-      gr.version = "v5.0"
-      gr.executeAsync()
-    } catch (e: Exception) {
-      result.error("FAIL_TO_POST", e.toString(), "FACEBOOK_APP")
-    }
-  }
-
-  private fun shareOnFacebookProfile(url: String?, message: String?, result: Result) {
+  private fun shareOnFeedFacebook(url: String?, message: String?, result: Result) {
     try {
       val imgFile = File(url)
       if (imgFile.exists()) {
@@ -219,7 +180,7 @@ class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
                 FileProvider.getUriForFile(activity,
                         "com.example.postouapp.com.postouapp.provider", imgFile)
         val content = if (bitmapUri != null) {
-          val photo = SharePhoto.Builder().setImageUrl(bitmapUri).build()
+          val photo = SharePhoto.Builder().setCaption("$message #Postou").setImageUrl(bitmapUri).build()
           SharePhotoContent.Builder().addPhoto(photo).build()
         } else {
           ShareLinkContent.Builder().setQuote(message).build()
@@ -280,8 +241,8 @@ class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
           intent.type = "image/*"
           intent.putExtra("com.facebook.platform.extra.APPLICATION_ID", facebookId)
           intent.putExtra("interactive_asset_uri", bitmapUri)
-          intent.putExtra("top_background_color", "#33FF33")
-          intent.putExtra("bottom_background_color", "#FF00FF")
+          intent.putExtra("top_background_color", "#ffffff")
+          intent.putExtra("bottom_background_color", "#ffffff")
 
           activity.grantUriPermission(
                   "com.facebook.katana", bitmapUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -300,7 +261,7 @@ class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
     }
   }
 
-  private fun sharePostOnInstagram(url: String?, msg: String?, result: Result) {
+  private fun shareOnFeedInstagram(url: String?, msg: String?, result: Result) {
     try {
       if (isInstalled("com.instagram.android")) {
         val imgFile = File(url)
@@ -446,6 +407,41 @@ class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
     }
   }
 
+  private fun shareOnGallery(bmp: Bitmap, name: String?): HashMap<String, Any?> {
+    val context = activity.get()!!
+    val file = generateFile("jpg", name = name)
+    return try {
+      val fos = FileOutputStream(file)
+      println("Imagem salva com sucesso na galeria")
+      bmp.compress(Bitmap.CompressFormat.JPEG, 100, fos)
+      fos.flush()
+      fos.close()
+      val uri = Uri.fromFile(file)
+
+      MediaScannerConnection.scanFile(context, arrayOf(file.toString()),
+              null, null)
+      bmp.recycle()
+      SaveResultModel(uri.toString().isNotEmpty(), uri.toString(), null).toHashMap()
+    } catch (e: IOException) {
+      SaveResultModel(false, null, e.toString()).toHashMap()
+    }
+  }
+
+  private fun generateFile(extension: String = "", name: String? = null): File {
+    val context = activity.get()!!
+
+    val storePath =  context.getExternalFilesDir(null)?.absolutePath + File.separator + Environment.DIRECTORY_PICTURES
+    val appDir = File(storePath)
+    if (!appDir.exists()) {
+      appDir.mkdir()
+    }
+    var fileName = name?:System.currentTimeMillis().toString()
+    if (extension.isNotEmpty()) {
+      fileName += (".$extension")
+    }
+    return File(appDir, fileName)
+  }
+
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
     channel.setMethodCallHandler(null)
   }
@@ -464,5 +460,17 @@ class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
 
   override fun onDetachedFromActivity() {
 
+  }
+}
+
+class SaveResultModel (var isSuccess: Boolean,
+                       var filePath: String? = null,
+                       var errorMessage: String? = null) {
+  fun toHashMap(): HashMap<String, Any?> {
+    val hashMap = HashMap<String, Any?>()
+    hashMap["isSuccess"] = isSuccess
+    hashMap["filePath"] = filePath
+    hashMap["errorMessage"] = errorMessage
+    return hashMap
   }
 }

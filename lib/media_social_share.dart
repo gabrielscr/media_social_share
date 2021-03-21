@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 
@@ -18,6 +19,16 @@ class MediaSocialShare {
   static Future<String> get platformVersion async {
     final String version = await _channel.invokeMethod('getPlatformVersion');
     return version;
+  }
+
+  static Future shareOnGallery(Uint8List imageBytes, String name) async {
+    assert(imageBytes != null);
+    final result =
+        await _channel.invokeMethod('shareOnGallery', <String, dynamic>{
+      'imageBytes': imageBytes,
+      'name': name,
+    });
+    return result;
   }
 
   static Future<Map<dynamic, dynamic>> getFacebookUser() async {

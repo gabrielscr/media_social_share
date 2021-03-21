@@ -1,3 +1,9 @@
+## [0.0.9] - 21/03/2021.
+* Correção compartilhar na galeria.
+
+## [0.0.8] - 21/03/2021.
+* Adiciona compartilhar na galeria.
+
 ## [0.0.7] - 21/03/2021.
 * Correção Stories Facebook.
 
