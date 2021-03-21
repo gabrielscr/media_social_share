@@ -55,9 +55,11 @@ class MediaSocialShare {
     }
   }
 
-  static Future<String> shareStoryOnFacebook(String url) async {
+  static Future<String> shareStoryOnFacebook(
+      String url, String facebookId) async {
     final Map<String, Object> arguments = Map<String, dynamic>();
     arguments.putIfAbsent('url', () => url);
+    arguments.putIfAbsent('facebookId', () => facebookId);
     try {
       return await _channel.invokeMethod('shareStoryOnFacebook', arguments);
     } on PlatformException catch (e) {
