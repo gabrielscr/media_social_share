@@ -1,3 +1,6 @@
+## [0.0.10] - 21/03/2021.
+* Correção compartilhar na galeria.
+
 ## [0.0.9] - 21/03/2021.
 * Correção compartilhar na galeria.
 

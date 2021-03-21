@@ -23,11 +23,8 @@ class MediaSocialShare {
 
   static Future shareOnGallery(Uint8List imageBytes, String name) async {
     assert(imageBytes != null);
-    final result =
-        await _channel.invokeMethod('shareOnGallery', <String, dynamic>{
-      'imageBytes': imageBytes,
-      'name': name,
-    });
+    final result = await _channel.invokeMethod(
+        'shareOnGallery', <String, dynamic>{'imageBytes': imageBytes});
     return result;
   }
 

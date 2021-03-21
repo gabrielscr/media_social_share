@@ -2,11 +2,11 @@ package com.grochatechnologies.media_social_share
 
 import android.app.Activity
 import android.content.ActivityNotFoundException
+import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Bundle
 import androidx.annotation.NonNull
@@ -30,8 +30,11 @@ import org.json.JSONArray
 import java.io.File
 import java.lang.ref.WeakReference
 import java.io.FileOutputStream
-import java.io.IOException
 import android.os.Environment
+import android.os.SystemClock
+import android.provider.MediaStore
+import java.io.File.separator
+import java.io.OutputStream
 
 /** MediaSocialSharePlugin */
 class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
@@ -113,8 +116,7 @@ class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
       }
       "shareOnGallery" -> {
         val image = call.argument<ByteArray>("imageBytes") ?: return
-        val name = call.argument<String>("name")
-        shareOnGallery(BitmapFactory.decodeByteArray(image,0,image.size), name)
+        shareOnGallery(BitmapFactory.decodeByteArray(image,0,image.size))
       }
       "checkPermissionToPublish" -> checkPermissionToPublish(result)
       else -> result.notImplemented()
@@ -407,39 +409,56 @@ class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
     }
   }
 
-  private fun shareOnGallery(bmp: Bitmap, name: String?): HashMap<String, Any?> {
-    val context = activity.get()!!
-    val file = generateFile("jpg", name = name)
-    return try {
-      val fos = FileOutputStream(file)
-      println("Imagem salva com sucesso na galeria")
-      bmp.compress(Bitmap.CompressFormat.JPEG, 100, fos)
-      fos.flush()
-      fos.close()
-      val uri = Uri.fromFile(file)
+  fun shareOnGallery(bmp: Bitmap): Uri? {
 
-      MediaScannerConnection.scanFile(context, arrayOf(file.toString()),
-              null, null)
-      bmp.recycle()
-      SaveResultModel(uri.toString().isNotEmpty(), uri.toString(), null).toHashMap()
-    } catch (e: IOException) {
-      SaveResultModel(false, null, e.toString()).toHashMap()
+    var context = activity.get()!!
+
+    if (android.os.Build.VERSION.SDK_INT >= 29) {
+      val values = ContentValues()
+      values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+      values.put(MediaStore.Images.Media.DATE_ADDED, System.currentTimeMillis() / 1000)
+      values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis())
+      values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/test_pictures")
+      values.put(MediaStore.Images.Media.IS_PENDING, true)
+      values.put(MediaStore.Images.Media.DISPLAY_NAME, "img_${SystemClock.uptimeMillis()}")
+
+      val uri: Uri? =
+              context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+      if (uri != null) {
+        saveImageToStream(bmp, context.contentResolver.openOutputStream(uri))
+        values.put(MediaStore.Images.Media.IS_PENDING, false)
+        context.contentResolver.update(uri, values, null, null)
+        return uri
+      }
+    } else {
+      val directory =
+              File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES).toString() + separator + "MediaSocialShare")
+      if (!directory.exists()) {
+        directory.mkdirs()
+      }
+      val fileName =  "img_${SystemClock.uptimeMillis()}"+ ".jpeg"
+      val file = File(directory, fileName)
+      saveImageToStream(bmp, FileOutputStream(file))
+      if (file.absolutePath != null) {
+        val values = ContentValues()
+        values.put(MediaStore.Images.Media._ID, file.absolutePath)
+        // .DATA is deprecated in API 29
+        context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+        return Uri.fromFile(file)
+      }
     }
+    return null
   }
 
-  private fun generateFile(extension: String = "", name: String? = null): File {
-    val context = activity.get()!!
-
-    val storePath =  context.getExternalFilesDir(null)?.absolutePath + File.separator + Environment.DIRECTORY_PICTURES
-    val appDir = File(storePath)
-    if (!appDir.exists()) {
-      appDir.mkdir()
+  fun saveImageToStream(bitmap: Bitmap, outputStream: OutputStream?) {
+    if (outputStream != null) {
+      try {
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+        outputStream.close()
+      } catch (e: Exception) {
+        e.printStackTrace()
+      }
     }
-    var fileName = name?:System.currentTimeMillis().toString()
-    if (extension.isNotEmpty()) {
-      fileName += (".$extension")
-    }
-    return File(appDir, fileName)
   }
 
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
@@ -460,17 +479,5 @@ class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
 
   override fun onDetachedFromActivity() {
 
-  }
-}
-
-class SaveResultModel (var isSuccess: Boolean,
-                       var filePath: String? = null,
-                       var errorMessage: String? = null) {
-  fun toHashMap(): HashMap<String, Any?> {
-    val hashMap = HashMap<String, Any?>()
-    hashMap["isSuccess"] = isSuccess
-    hashMap["filePath"] = filePath
-    hashMap["errorMessage"] = errorMessage
-    return hashMap
   }
 }
