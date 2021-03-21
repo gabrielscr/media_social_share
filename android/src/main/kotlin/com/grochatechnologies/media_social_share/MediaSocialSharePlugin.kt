@@ -264,19 +264,39 @@ class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
   }
 
   private fun shareStoryOnFacebook(url: String?, facebookId: String, result: Result){
-    val stickerAssetUri = Uri.parse(url) // This is your application's FB ID
-    val intent = Intent("com.facebook.stories.ADD_TO_STORY")
-    intent.type = "MEDIA_TYPE_JPEG"
-    intent.putExtra("com.facebook.platform.extra.APPLICATION_ID", facebookId)
-    intent.putExtra("interactive_asset_uri", stickerAssetUri)
-    intent.putExtra("top_background_color", "#33FF33")
-    intent.putExtra("bottom_background_color", "#FF00FF")
 
-    val activity = activity.get()!!
-    activity.grantUriPermission(
-            "com.facebook.katana", stickerAssetUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    if (activity.packageManager.resolveActivity(intent, 0) != null) {
-      activity.startActivityForResult(intent, 0)
+    try {
+      if (isInstalled("com.facebook.katana")) {
+        val imgFile = File(url)
+
+        if (imgFile.exists()) {
+          val activity = activity.get()!!
+
+          val bitmapUri =
+                  FileProvider.getUriForFile(activity,
+                          "com.example.postouapp.com.postouapp.provider", imgFile)
+
+          val intent = Intent("com.facebook.stories.ADD_TO_STORY")
+          intent.type = "image/*"
+          intent.putExtra("com.facebook.platform.extra.APPLICATION_ID", facebookId)
+          intent.putExtra("interactive_asset_uri", bitmapUri)
+          intent.putExtra("top_background_color", "#33FF33")
+          intent.putExtra("bottom_background_color", "#FF00FF")
+
+          activity.grantUriPermission(
+                  "com.facebook.katana", bitmapUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+          if (activity.packageManager.resolveActivity(intent, 0) != null) {
+            activity.startActivityForResult(intent, 0)
+          }
+          result.success("POST_SENT")
+        }  else {
+          result.error("FAIL_TO_POST", "$url not found", "FACEBOOK_POST_APP")
+        }
+      } else {
+        result.error("APP_NOT_FOUND", "App do Facebook não encontrado", "FACEBOOK_POST_APP")
+      }
+    } catch (e: Exception) {
+      result.error("FAIL_TO_POST", e.toString(), "FACEBOOK_POST_APP")
     }
   }
 
@@ -300,7 +320,7 @@ class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
           result.error("FAIL_TO_POST", "$url not found", "INSTAGRAM_POST_APP")
         }
       } else {
-        result.error("APP_NOT_FOUND", "Instagram app not found", "INSTAGRAM_POST_APP")
+        result.error("APP_NOT_FOUND", "App do Instagram não encontrado", "INSTAGRAM_POST_APP")
       }
     } catch (e: Exception) {
       result.error("FAIL_TO_POST", e.toString(), "INSTAGRAM_POST_APP")
@@ -331,7 +351,7 @@ class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
           result.error("FAIL_TO_POST", "$url not found", app)
         }
       } else {
-        result.error("APP_NOT_FOUND", "App not found", app)
+        result.error("APP_NOT_FOUND", "App do WhatsApp não foi encontrado", app)
       }
     } catch (e: Exception) {
       result.error("FAIL_TO_POST", e.toString(), app)
@@ -347,7 +367,7 @@ class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
       intent.putExtra(Intent.EXTRA_TEXT, link)
       activity.get()!!.startActivity(intent)
     } else {
-      result.error("APP_NOT_FOUND", "App not found", app)
+      result.error("APP_NOT_FOUND", "App do WhatsApp não foi encontrado", app)
     }
   }
 
@@ -396,7 +416,7 @@ class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
       if (ShareDialog.canShow(ShareLinkContent::class.java)) {
         shareDialog.show(content)
         result.success("POST_SENT")
-      } else result.error("APP_NOT_FOUND", "Facebook app not found", "FACEBOOK_APP")
+      } else result.error("APP_NOT_FOUND", "App do Facebook não foi encontrado", "FACEBOOK_APP")
     } catch (e: Exception) {
       result.error("FAIL_TO_POST", e.toString(), "FACEBOOK_APP")
     }
