@@ -1,12 +1,12 @@
 name: media_social_share
 description: Compartilhamento de forma nativa e em todas as redes sociais.
-version: 0.0.4
+version: 0.0.5
 author: Gabriel Rocha
 homepage: https://github.com/gabrielscr/media_social_share.git
 
 environment:
   sdk: ">=2.7.0 <3.0.0"
-  flutter: ">=1.17.0"
+  flutter: ">=1.20.0"
 
 dependencies:
   flutter:
@@ -15,7 +15,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-    
+
 flutter:
   plugin:
     platforms:
@@ -23,5 +23,4 @@ flutter:
         package: com.grochatechnologies.media_social_share
         pluginClass: MediaSocialSharePlugin
       ios:
-        package: com.grochatechnologies.media_social_share
         pluginClass: MediaSocialSharePlugin
