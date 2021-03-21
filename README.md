@@ -1,14 +1,26 @@
 # media_social_share
 
-A new Flutter package project.
+O melhor e mais completo plugin de compartilhamento nas mídias sociais e outros de forma nativa.
 
-## Getting Started
+# Como usar:
 
-This project is a starting point for a Dart
-[package](https://flutter.dev/developing-packages/),
-a library module containing code that can be shared easily across
-multiple Flutter or Dart projects.
+## Compartilhar no feed do Instagram:
+await MediaSocialShare.sharePostOnInstagram('caminhoImagem', 'legenda');
 
-For help getting started with Flutter, view our 
-[online documentation](https://flutter.dev/docs), which offers tutorials, 
-samples, guidance on mobile development, and a full API reference.
+## Compartilhar no story do Instagram:
+await MediaSocialShare.shareStoryOnInstagram('caminhoImagem');
+
+## Compartilhar no feed do Facebook:
+await MediaSocialShare.shareOnFacebook('caminhoImagem', 'legenda', 'facebookId');
+
+## Compartilhar no story do Facebook:
+await MediaSocialShare.shareStoryOnFacebook('caminhoImagem');
+
+## Compartilhar no WhatsApp (status):
+await MediaSocialShare.shareOnWhatsApp('caminhoImagem', 'legenda');
+
+## Compartilhar no WhatsApp Business:
+await MediaSocialShare.shareOnWhatsAppBusiness('caminhoImagem', 'legenda');
+
+## Compartilhar em qualquer app possível de compartilhamento:
+await MediaSocialShare.shareOnNative('caminhoImagem', 'legenda');
