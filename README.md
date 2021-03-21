@@ -1,4 +1,4 @@
-# media_social_share
+# MediaSocialShare
 
 O melhor e mais completo plugin de compartilhamento nas mídias sociais e outros de forma nativa.
 
