@@ -38,10 +38,6 @@ import java.io.OutputStream
 
 /** MediaSocialSharePlugin */
 class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
-  /// The MethodChannel that will the communication between Flutter and native Android
-  ///
-  /// This local reference serves to register the plugin with the Flutter Engine and unregister it
-  /// when the Flutter Engine is detached from the Activity
   private lateinit var channel : MethodChannel
 
   companion object {
@@ -275,6 +271,7 @@ class MediaSocialSharePlugin: ActivityAware, FlutterPlugin, MethodCallHandler {
           val feedIntent = Intent(Intent.ACTION_SEND)
           feedIntent.type = "image/*"
           feedIntent.putExtra(Intent.EXTRA_TEXT, msg)
+          feedIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
           feedIntent.putExtra(Intent.EXTRA_STREAM, bitmapUri)
           feedIntent.setPackage("com.instagram.android")
           activity.startActivity(feedIntent)

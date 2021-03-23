@@ -48,7 +48,7 @@ class MediaSocialShare {
     return result;
   }
 
-  static Future<String> shareOnFacebook(String url, String message,
+  static Future<String> shareOnFeedFacebook(String url, String message,
       String accessToken, int time, String facebookId) async {
     final Map<String, Object> arguments = Map<String, dynamic>();
     arguments.putIfAbsent('url', () => url);
@@ -57,7 +57,7 @@ class MediaSocialShare {
     arguments.putIfAbsent('time', () => time);
     arguments.putIfAbsent('facebookId', () => facebookId);
     try {
-      return await _channel.invokeMethod('shareOnFacebook', arguments);
+      return await _channel.invokeMethod('shareOnFeedFacebook', arguments);
     } on PlatformException catch (e) {
       throw e;
     }
@@ -85,12 +85,12 @@ class MediaSocialShare {
     }
   }
 
-  static Future<String> sharePostOnInstagram(String url, String message) async {
+  static Future<String> shareOnFeedInstagram(String url, String message) async {
     final Map<String, Object> arguments = Map<String, dynamic>();
     arguments.putIfAbsent('url', () => url);
     arguments.putIfAbsent('message', () => message);
     try {
-      return await _channel.invokeMethod('sharePostOnInstagram', arguments);
+      return await _channel.invokeMethod('shareOnFeedInstagram', arguments);
     } on PlatformException catch (e) {
       throw e;
     }
