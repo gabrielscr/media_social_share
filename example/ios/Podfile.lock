@@ -1,0 +1,22 @@
+PODS:
+  - Flutter (1.0.0)
+  - media_social_share (0.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - media_social_share (from `.symlinks/plugins/media_social_share/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  media_social_share:
+    :path: ".symlinks/plugins/media_social_share/ios"
+
+SPEC CHECKSUMS:
+  Flutter: 434fef37c0980e73bb6479ef766c45957d4b510c
+  media_social_share: 249c75f106701a019e9f37bb7b75d4d8af738cf5
+
+PODFILE CHECKSUM: aafe91acc616949ddb318b77800a7f51bffa2a4c
+
+COCOAPODS: 1.10.1
